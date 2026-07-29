@@ -1,6 +1,10 @@
 pipeline {
     agent { label 'docker-slave' }
 
+    environment {
+        PATH+SONAR = '/opt/sonar-scanner/bin'
+    }
+
     options {
         timestamps()
         disableConcurrentBuilds()
@@ -127,7 +131,11 @@ pipeline {
                     kubectl version --client
                     curl --version | head -1
                     python3 --version
-                    sonar-scanner --version
+                    echo "PATH=$PATH"
+                    echo "Checking SonarScanner installation..."
+                    ls -l /opt/sonar-scanner/bin/sonar-scanner
+                    command -v sonar-scanner
+                    /opt/sonar-scanner/bin/sonar-scanner --version
                     docker ps
                 '''
             }
@@ -138,7 +146,7 @@ pipeline {
                 withSonarQubeEnv("${SONAR_SERVER_NAME}") {
                     sh '''
                         set -eux
-                        sonar-scanner \
+                        /opt/sonar-scanner/bin/sonar-scanner \
                           -Dsonar.projectKey="${SONAR_PROJECT_KEY}" \
                           -Dsonar.projectName="${PROJECT_NAME}" \
                           -Dsonar.sources=app \
