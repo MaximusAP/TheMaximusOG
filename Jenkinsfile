@@ -188,40 +188,44 @@ pipeline {
 
                     docker rm -f "${TEST_CONTAINER}" >/dev/null 2>&1 || true
 
+                    # Jenkins runs inside a Docker agent container. The application
+                    # container is a sibling on the Docker host, so 127.0.0.1 inside
+                    # the Jenkins agent does not point to the Docker host. Test the
+                    # application from inside the application container instead.
                     docker run -d \
                       --name "${TEST_CONTAINER}" \
-                      -p 127.0.0.1::80 \
                       "${FULL_IMAGE}"
 
-                    TEST_PORT="$(docker port "${TEST_CONTAINER}" 80/tcp | awk -F: '{print $NF}')"
-                    test -n "${TEST_PORT}"
-
-                    echo "Waiting for ${TEST_CONTAINER} on 127.0.0.1:${TEST_PORT}..."
+                    echo "Waiting for ${TEST_CONTAINER} to become ready..."
                     READY=0
 
                     for ATTEMPT in $(seq 1 30); do
-                        if ! docker inspect -f '{{.State.Running}}' "${TEST_CONTAINER}" 2>/dev/null | grep -q true; then
+                        RUNNING="$(docker inspect -f '{{.State.Running}}' "${TEST_CONTAINER}" 2>/dev/null || echo false)"
+
+                        if [ "${RUNNING}" != "true" ]; then
                             echo "Container stopped before becoming ready."
                             docker inspect -f 'status={{.State.Status}} exit={{.State.ExitCode}} error={{.State.Error}}' \
                               "${TEST_CONTAINER}" || true
                             exit 1
                         fi
 
-                        if curl -fsS --connect-timeout 2 --max-time 5 \
-                          "http://127.0.0.1:${TEST_PORT}/healthz" >/dev/null; then
+                        if docker exec "${TEST_CONTAINER}" \
+                          wget -qO- http://127.0.0.1/healthz >/dev/null 2>&1; then
                             echo "Health endpoint is ready."
                             READY=1
                             break
                         fi
 
-                        if curl -fsS --connect-timeout 2 --max-time 5 \
-                          "http://127.0.0.1:${TEST_PORT}/" >/dev/null; then
-                            echo "Root endpoint is ready; /healthz is not available."
+                        if docker exec "${TEST_CONTAINER}" \
+                          wget -qO- http://127.0.0.1/ >/dev/null 2>&1; then
+                            echo "Root endpoint is ready; /healthz is unavailable."
                             READY=1
                             break
                         fi
 
-                        echo "Attempt ${ATTEMPT}/30: application is not ready yet."
+                        HEALTH_STATUS="$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}not-configured{{end}}' \
+                          "${TEST_CONTAINER}" 2>/dev/null || echo unknown)"
+                        echo "Attempt ${ATTEMPT}/30: application is not ready yet; health=${HEALTH_STATUS}."
                         sleep 2
                     done
 
@@ -232,13 +236,14 @@ pipeline {
                         exit 1
                     fi
 
-                    curl -fsS --connect-timeout 2 --max-time 5 \
-                      "http://127.0.0.1:${TEST_PORT}/" >/dev/null
+                    docker exec "${TEST_CONTAINER}" \
+                      wget -qO- http://127.0.0.1/ >/dev/null
 
                     echo "Container smoke test passed."
                 '''
             }
         }
+
         stage('Push to Nexus') {
             steps {
                 withCredentials([usernamePassword(
