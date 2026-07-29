@@ -1,10 +1,6 @@
 pipeline {
     agent { label 'docker-slave' }
 
-    environment {
-        PATH+SONAR = '/opt/sonar-scanner/bin'
-    }
-
     options {
         timestamps()
         disableConcurrentBuilds()
@@ -134,7 +130,7 @@ pipeline {
                     echo "PATH=$PATH"
                     echo "Checking SonarScanner installation..."
                     ls -l /opt/sonar-scanner/bin/sonar-scanner
-                    command -v sonar-scanner
+                    test -x /opt/sonar-scanner/bin/sonar-scanner
                     /opt/sonar-scanner/bin/sonar-scanner --version
                     docker ps
                 '''
