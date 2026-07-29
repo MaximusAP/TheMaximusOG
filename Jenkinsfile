@@ -51,29 +51,68 @@ pipeline {
         stage('Load config') {
             steps {
                 script {
-                    // Plugin-free replacement for readProperties.
-                    readFile('project.env').readLines().each { rawLine ->
-                        def line = rawLine.trim()
-
-                        if (line && !line.startsWith('#') && line.contains('=')) {
-                            def parts = line.split('=', 2)
-                            env[parts[0].trim()] = parts[1].trim()
-                        }
-                    }
-
-                    def required = [
-                        'PROJECT_NAME', 'NAMESPACE', 'APP_HOST', 'REPLICAS',
-                        'NEXUS_REGISTRY', 'NEXUS_REPO', 'INGRESS_CLASS',
-                        'SONAR_PROJECT_KEY', 'SONAR_SERVER_NAME',
-                        'TECHNITIUM_API_URL', 'TECHNITIUM_ZONE', 'NPM_IP',
-                        'NPM_API_URL', 'NPM_FORWARD_IP', 'NPM_FORWARD_PORT'
-                    ]
-
-                    required.each { key ->
-                        if (!env[key]?.trim()) {
-                            error("Missing required value in project.env: ${key}")
-                        }
-                    }
+                    // Sandbox-safe: source project.env in the shell and assign each
+                    // approved Jenkins environment property explicitly.
+                    env.PROJECT_NAME = sh(
+                        script: "set -a; . ./project.env; printf '%s' \"\$PROJECT_NAME\"",
+                        returnStdout: true
+                    ).trim()
+                    env.NAMESPACE = sh(
+                        script: "set -a; . ./project.env; printf '%s' \"\$NAMESPACE\"",
+                        returnStdout: true
+                    ).trim()
+                    env.APP_HOST = sh(
+                        script: "set -a; . ./project.env; printf '%s' \"\$APP_HOST\"",
+                        returnStdout: true
+                    ).trim()
+                    env.REPLICAS = sh(
+                        script: "set -a; . ./project.env; printf '%s' \"\$REPLICAS\"",
+                        returnStdout: true
+                    ).trim()
+                    env.NEXUS_REGISTRY = sh(
+                        script: "set -a; . ./project.env; printf '%s' \"\$NEXUS_REGISTRY\"",
+                        returnStdout: true
+                    ).trim()
+                    env.NEXUS_REPO = sh(
+                        script: "set -a; . ./project.env; printf '%s' \"\$NEXUS_REPO\"",
+                        returnStdout: true
+                    ).trim()
+                    env.INGRESS_CLASS = sh(
+                        script: "set -a; . ./project.env; printf '%s' \"\$INGRESS_CLASS\"",
+                        returnStdout: true
+                    ).trim()
+                    env.SONAR_PROJECT_KEY = sh(
+                        script: "set -a; . ./project.env; printf '%s' \"\$SONAR_PROJECT_KEY\"",
+                        returnStdout: true
+                    ).trim()
+                    env.SONAR_SERVER_NAME = sh(
+                        script: "set -a; . ./project.env; printf '%s' \"\$SONAR_SERVER_NAME\"",
+                        returnStdout: true
+                    ).trim()
+                    env.TECHNITIUM_API_URL = sh(
+                        script: "set -a; . ./project.env; printf '%s' \"\$TECHNITIUM_API_URL\"",
+                        returnStdout: true
+                    ).trim()
+                    env.TECHNITIUM_ZONE = sh(
+                        script: "set -a; . ./project.env; printf '%s' \"\$TECHNITIUM_ZONE\"",
+                        returnStdout: true
+                    ).trim()
+                    env.NPM_IP = sh(
+                        script: "set -a; . ./project.env; printf '%s' \"\$NPM_IP\"",
+                        returnStdout: true
+                    ).trim()
+                    env.NPM_API_URL = sh(
+                        script: "set -a; . ./project.env; printf '%s' \"\$NPM_API_URL\"",
+                        returnStdout: true
+                    ).trim()
+                    env.NPM_FORWARD_IP = sh(
+                        script: "set -a; . ./project.env; printf '%s' \"\$NPM_FORWARD_IP\"",
+                        returnStdout: true
+                    ).trim()
+                    env.NPM_FORWARD_PORT = sh(
+                        script: "set -a; . ./project.env; printf '%s' \"\$NPM_FORWARD_PORT\"",
+                        returnStdout: true
+                    ).trim()
 
                     env.FULL_IMAGE = "${env.NEXUS_REGISTRY}/${env.NEXUS_REPO}:${env.BUILD_NUMBER}"
                     env.LATEST_IMAGE = "${env.NEXUS_REGISTRY}/${env.NEXUS_REPO}:latest"
@@ -81,6 +120,28 @@ pipeline {
 
                 sh '''
                     set -eu
+
+                    required_vars="PROJECT_NAME NAMESPACE APP_HOST REPLICAS NEXUS_REGISTRY NEXUS_REPO INGRESS_CLASS SONAR_PROJECT_KEY SONAR_SERVER_NAME TECHNITIUM_API_URL TECHNITIUM_ZONE NPM_IP NPM_API_URL NPM_FORWARD_IP NPM_FORWARD_PORT"
+
+                    for variable_name in ${required_vars}; do
+                        eval "variable_value=\${${variable_name}:-}"
+                        if [ -z "${variable_value}" ]; then
+                            echo "ERROR: Missing required value in project.env: ${variable_name}" >&2
+                            exit 1
+                        fi
+                    done
+
+                    case "${REPLICAS}" in
+                        ''|*[!0-9]*)
+                            echo "ERROR: REPLICAS must be a positive integer" >&2
+                            exit 1
+                            ;;
+                        0)
+                            echo "ERROR: REPLICAS must be greater than zero" >&2
+                            exit 1
+                            ;;
+                    esac
+
                     echo "Project:   ${PROJECT_NAME}"
                     echo "Namespace: ${NAMESPACE}"
                     echo "Image:     ${FULL_IMAGE}"
@@ -288,19 +349,32 @@ pipeline {
 
     post {
         unsuccessful {
-            withCredentials([file(
-                credentialsId: 'kubeconfig-lab',
-                variable: 'KUBECONFIG_FILE'
-            )]) {
-                sh '''
-                    set +e
-                    export KUBECONFIG="${KUBECONFIG_FILE}"
-                    kubectl get all,ingress -n "${NAMESPACE}" -o wide
-                    kubectl get events -n "${NAMESPACE}" \
-                      --sort-by=.lastTimestamp | tail -40
-                    kubectl describe deployment "${PROJECT_NAME}" \
-                      -n "${NAMESPACE}"
-                '''
+            script {
+                if (env.NAMESPACE?.trim() && env.PROJECT_NAME?.trim()) {
+                    withCredentials([file(
+                        credentialsId: 'kubeconfig-lab',
+                        variable: 'KUBECONFIG_FILE'
+                    )]) {
+                        sh '''
+                            set +e
+                            export KUBECONFIG="${KUBECONFIG_FILE}"
+
+                            kubectl get all,ingress \
+                              -n "${NAMESPACE}" -o wide || true
+
+                            kubectl get events \
+                              -n "${NAMESPACE}" \
+                              --sort-by=.lastTimestamp | tail -40 || true
+
+                            kubectl describe deployment "${PROJECT_NAME}" \
+                              -n "${NAMESPACE}" || true
+
+                            exit 0
+                        '''
+                    }
+                } else {
+                    echo 'Kubernetes diagnostics skipped because project.env was not loaded.'
+                }
             }
         }
 
