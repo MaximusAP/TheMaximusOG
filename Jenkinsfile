@@ -176,31 +176,69 @@ pipeline {
         stage('Container smoke test') {
             steps {
                 sh '''
-                    set -eux
+                    set -eu
                     TEST_CONTAINER="${PROJECT_NAME}-smoke-${BUILD_NUMBER}"
 
                     cleanup() {
+                        echo "Container logs:"
                         docker logs "${TEST_CONTAINER}" 2>/dev/null || true
                         docker rm -f "${TEST_CONTAINER}" >/dev/null 2>&1 || true
                     }
                     trap cleanup EXIT
 
                     docker rm -f "${TEST_CONTAINER}" >/dev/null 2>&1 || true
+
                     docker run -d \
                       --name "${TEST_CONTAINER}" \
                       -p 127.0.0.1::80 \
                       "${FULL_IMAGE}"
 
                     TEST_PORT="$(docker port "${TEST_CONTAINER}" 80/tcp | awk -F: '{print $NF}')"
+                    test -n "${TEST_PORT}"
 
-                    curl --fail --retry 15 --retry-delay 2 \
-                      "http://127.0.0.1:${TEST_PORT}/healthz"
-                    curl --fail --retry 5 --retry-delay 2 \
+                    echo "Waiting for ${TEST_CONTAINER} on 127.0.0.1:${TEST_PORT}..."
+                    READY=0
+
+                    for ATTEMPT in $(seq 1 30); do
+                        if ! docker inspect -f '{{.State.Running}}' "${TEST_CONTAINER}" 2>/dev/null | grep -q true; then
+                            echo "Container stopped before becoming ready."
+                            docker inspect -f 'status={{.State.Status}} exit={{.State.ExitCode}} error={{.State.Error}}' \
+                              "${TEST_CONTAINER}" || true
+                            exit 1
+                        fi
+
+                        if curl -fsS --connect-timeout 2 --max-time 5 \
+                          "http://127.0.0.1:${TEST_PORT}/healthz" >/dev/null; then
+                            echo "Health endpoint is ready."
+                            READY=1
+                            break
+                        fi
+
+                        if curl -fsS --connect-timeout 2 --max-time 5 \
+                          "http://127.0.0.1:${TEST_PORT}/" >/dev/null; then
+                            echo "Root endpoint is ready; /healthz is not available."
+                            READY=1
+                            break
+                        fi
+
+                        echo "Attempt ${ATTEMPT}/30: application is not ready yet."
+                        sleep 2
+                    done
+
+                    if [ "${READY}" -ne 1 ]; then
+                        echo "Smoke test failed after 60 seconds."
+                        docker inspect -f 'status={{.State.Status}} health={{if .State.Health}}{{.State.Health.Status}}{{else}}not-configured{{end}}' \
+                          "${TEST_CONTAINER}" || true
+                        exit 1
+                    fi
+
+                    curl -fsS --connect-timeout 2 --max-time 5 \
                       "http://127.0.0.1:${TEST_PORT}/" >/dev/null
+
+                    echo "Container smoke test passed."
                 '''
             }
         }
-
         stage('Push to Nexus') {
             steps {
                 withCredentials([usernamePassword(
