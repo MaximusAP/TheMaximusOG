@@ -118,35 +118,34 @@ pipeline {
                     env.LATEST_IMAGE = "${env.NEXUS_REGISTRY}/${env.NEXUS_REPO}:latest"
                 }
 
-                sh '''
-                    set -eu
+                script {
+                    // Explicit checks avoid Bash-only indirect expansion and
+                    // remain compatible with the Jenkins Groovy sandbox.
+                    if (!env.PROJECT_NAME?.trim())       { error('Missing required value in project.env: PROJECT_NAME') }
+                    if (!env.NAMESPACE?.trim())          { error('Missing required value in project.env: NAMESPACE') }
+                    if (!env.APP_HOST?.trim())           { error('Missing required value in project.env: APP_HOST') }
+                    if (!env.REPLICAS?.trim())           { error('Missing required value in project.env: REPLICAS') }
+                    if (!env.NEXUS_REGISTRY?.trim())     { error('Missing required value in project.env: NEXUS_REGISTRY') }
+                    if (!env.NEXUS_REPO?.trim())         { error('Missing required value in project.env: NEXUS_REPO') }
+                    if (!env.INGRESS_CLASS?.trim())      { error('Missing required value in project.env: INGRESS_CLASS') }
+                    if (!env.SONAR_PROJECT_KEY?.trim())  { error('Missing required value in project.env: SONAR_PROJECT_KEY') }
+                    if (!env.SONAR_SERVER_NAME?.trim())  { error('Missing required value in project.env: SONAR_SERVER_NAME') }
+                    if (!env.TECHNITIUM_API_URL?.trim()) { error('Missing required value in project.env: TECHNITIUM_API_URL') }
+                    if (!env.TECHNITIUM_ZONE?.trim())    { error('Missing required value in project.env: TECHNITIUM_ZONE') }
+                    if (!env.NPM_IP?.trim())             { error('Missing required value in project.env: NPM_IP') }
+                    if (!env.NPM_API_URL?.trim())        { error('Missing required value in project.env: NPM_API_URL') }
+                    if (!env.NPM_FORWARD_IP?.trim())     { error('Missing required value in project.env: NPM_FORWARD_IP') }
+                    if (!env.NPM_FORWARD_PORT?.trim())   { error('Missing required value in project.env: NPM_FORWARD_PORT') }
 
-                    required_vars="PROJECT_NAME NAMESPACE APP_HOST REPLICAS NEXUS_REGISTRY NEXUS_REPO INGRESS_CLASS SONAR_PROJECT_KEY SONAR_SERVER_NAME TECHNITIUM_API_URL TECHNITIUM_ZONE NPM_IP NPM_API_URL NPM_FORWARD_IP NPM_FORWARD_PORT"
+                    if (!(env.REPLICAS ==~ /[1-9][0-9]*/)) {
+                        error('REPLICAS must be a positive integer greater than zero')
+                    }
 
-                    for variable_name in ${required_vars}; do
-                        eval "variable_value=\${${variable_name}:-}"
-                        if [ -z "${variable_value}" ]; then
-                            echo "ERROR: Missing required value in project.env: ${variable_name}" >&2
-                            exit 1
-                        fi
-                    done
-
-                    case "${REPLICAS}" in
-                        ''|*[!0-9]*)
-                            echo "ERROR: REPLICAS must be a positive integer" >&2
-                            exit 1
-                            ;;
-                        0)
-                            echo "ERROR: REPLICAS must be greater than zero" >&2
-                            exit 1
-                            ;;
-                    esac
-
-                    echo "Project:   ${PROJECT_NAME}"
-                    echo "Namespace: ${NAMESPACE}"
-                    echo "Image:     ${FULL_IMAGE}"
-                    echo "Hostname:  ${APP_HOST}"
-                '''
+                    echo "Project:   ${env.PROJECT_NAME}"
+                    echo "Namespace: ${env.NAMESPACE}"
+                    echo "Image:     ${env.FULL_IMAGE}"
+                    echo "Hostname:  ${env.APP_HOST}"
+                }
             }
         }
 
