@@ -9,26 +9,6 @@ pipeline {
         skipDefaultCheckout(true)
     }
 
-    environment {
-        PROJECT_NAME       = ''
-        NAMESPACE          = ''
-        APP_HOST           = ''
-        REPLICAS           = ''
-        NEXUS_REGISTRY     = ''
-        NEXUS_REPO         = ''
-        INGRESS_CLASS      = ''
-        SONAR_PROJECT_KEY  = ''
-        SONAR_SERVER_NAME  = ''
-        TECHNITIUM_API_URL = ''
-        TECHNITIUM_ZONE    = ''
-        NPM_IP             = ''
-        NPM_API_URL        = ''
-        NPM_FORWARD_IP     = ''
-        NPM_FORWARD_PORT   = ''
-        FULL_IMAGE         = ''
-        LATEST_IMAGE       = ''
-    }
-
     stages {
         stage('Checkout') {
             steps {
@@ -51,95 +31,82 @@ pipeline {
         stage('Load config') {
             steps {
                 script {
-                    // Sandbox-safe: source project.env in the shell and assign each
-                    // approved Jenkins environment property explicitly.
-                    env.PROJECT_NAME = sh(
-                        script: "set -a; . ./project.env; printf '%s' \"\$PROJECT_NAME\"",
-                        returnStdout: true
-                    ).trim()
-                    env.NAMESPACE = sh(
-                        script: "set -a; . ./project.env; printf '%s' \"\$NAMESPACE\"",
-                        returnStdout: true
-                    ).trim()
-                    env.APP_HOST = sh(
-                        script: "set -a; . ./project.env; printf '%s' \"\$APP_HOST\"",
-                        returnStdout: true
-                    ).trim()
-                    env.REPLICAS = sh(
-                        script: "set -a; . ./project.env; printf '%s' \"\$REPLICAS\"",
-                        returnStdout: true
-                    ).trim()
-                    env.NEXUS_REGISTRY = sh(
-                        script: "set -a; . ./project.env; printf '%s' \"\$NEXUS_REGISTRY\"",
-                        returnStdout: true
-                    ).trim()
-                    env.NEXUS_REPO = sh(
-                        script: "set -a; . ./project.env; printf '%s' \"\$NEXUS_REPO\"",
-                        returnStdout: true
-                    ).trim()
-                    env.INGRESS_CLASS = sh(
-                        script: "set -a; . ./project.env; printf '%s' \"\$INGRESS_CLASS\"",
-                        returnStdout: true
-                    ).trim()
-                    env.SONAR_PROJECT_KEY = sh(
-                        script: "set -a; . ./project.env; printf '%s' \"\$SONAR_PROJECT_KEY\"",
-                        returnStdout: true
-                    ).trim()
-                    env.SONAR_SERVER_NAME = sh(
-                        script: "set -a; . ./project.env; printf '%s' \"\$SONAR_SERVER_NAME\"",
-                        returnStdout: true
-                    ).trim()
-                    env.TECHNITIUM_API_URL = sh(
-                        script: "set -a; . ./project.env; printf '%s' \"\$TECHNITIUM_API_URL\"",
-                        returnStdout: true
-                    ).trim()
-                    env.TECHNITIUM_ZONE = sh(
-                        script: "set -a; . ./project.env; printf '%s' \"\$TECHNITIUM_ZONE\"",
-                        returnStdout: true
-                    ).trim()
-                    env.NPM_IP = sh(
-                        script: "set -a; . ./project.env; printf '%s' \"\$NPM_IP\"",
-                        returnStdout: true
-                    ).trim()
-                    env.NPM_API_URL = sh(
-                        script: "set -a; . ./project.env; printf '%s' \"\$NPM_API_URL\"",
-                        returnStdout: true
-                    ).trim()
-                    env.NPM_FORWARD_IP = sh(
-                        script: "set -a; . ./project.env; printf '%s' \"\$NPM_FORWARD_IP\"",
-                        returnStdout: true
-                    ).trim()
-                    env.NPM_FORWARD_PORT = sh(
-                        script: "set -a; . ./project.env; printf '%s' \"\$NPM_FORWARD_PORT\"",
+                    // Load project.env once. The variables are returned in a fixed
+                    // order and then assigned explicitly to Jenkins env properties.
+                    // This avoids dynamic env[key] assignment and Script Approval.
+                    def configOutput = sh(
+                        script: '''
+                            set -eu
+                            set -a
+                            . ./project.env
+                            set +a
+
+                            printf '%s\n' \
+                              "${PROJECT_NAME}" \
+                              "${NAMESPACE}" \
+                              "${APP_HOST}" \
+                              "${REPLICAS}" \
+                              "${NEXUS_REGISTRY}" \
+                              "${NEXUS_REPO}" \
+                              "${INGRESS_CLASS}" \
+                              "${KUBE_INGRESS_IP}" \
+                              "${SONAR_PROJECT_KEY}" \
+                              "${SONAR_SERVER_NAME}" \
+                              "${TECHNITIUM_API_URL}" \
+                              "${TECHNITIUM_ZONE}" \
+                              "${NPM_IP}" \
+                              "${NPM_API_URL}" \
+                              "${NPM_FORWARD_IP}" \
+                              "${NPM_FORWARD_PORT}"
+                        ''',
                         returnStdout: true
                     ).trim()
 
-                    env.FULL_IMAGE = "${env.NEXUS_REGISTRY}/${env.NEXUS_REPO}:${env.BUILD_NUMBER}"
-                    env.LATEST_IMAGE = "${env.NEXUS_REGISTRY}/${env.NEXUS_REPO}:latest"
-                }
+                    def values = configOutput.readLines()
+                    if (values.size() != 16) {
+                        error("Unable to parse project.env: expected 16 values, received ${values.size()}")
+                    }
 
-                script {
-                    // Explicit checks avoid Bash-only indirect expansion and
-                    // remain compatible with the Jenkins Groovy sandbox.
-                    if (!env.PROJECT_NAME?.trim())       { error('Missing required value in project.env: PROJECT_NAME') }
-                    if (!env.NAMESPACE?.trim())          { error('Missing required value in project.env: NAMESPACE') }
-                    if (!env.APP_HOST?.trim())           { error('Missing required value in project.env: APP_HOST') }
-                    if (!env.REPLICAS?.trim())           { error('Missing required value in project.env: REPLICAS') }
-                    if (!env.NEXUS_REGISTRY?.trim())     { error('Missing required value in project.env: NEXUS_REGISTRY') }
-                    if (!env.NEXUS_REPO?.trim())         { error('Missing required value in project.env: NEXUS_REPO') }
-                    if (!env.INGRESS_CLASS?.trim())      { error('Missing required value in project.env: INGRESS_CLASS') }
-                    if (!env.SONAR_PROJECT_KEY?.trim())  { error('Missing required value in project.env: SONAR_PROJECT_KEY') }
-                    if (!env.SONAR_SERVER_NAME?.trim())  { error('Missing required value in project.env: SONAR_SERVER_NAME') }
-                    if (!env.TECHNITIUM_API_URL?.trim()) { error('Missing required value in project.env: TECHNITIUM_API_URL') }
-                    if (!env.TECHNITIUM_ZONE?.trim())    { error('Missing required value in project.env: TECHNITIUM_ZONE') }
-                    if (!env.NPM_IP?.trim())             { error('Missing required value in project.env: NPM_IP') }
-                    if (!env.NPM_API_URL?.trim())        { error('Missing required value in project.env: NPM_API_URL') }
-                    if (!env.NPM_FORWARD_IP?.trim())     { error('Missing required value in project.env: NPM_FORWARD_IP') }
-                    if (!env.NPM_FORWARD_PORT?.trim())   { error('Missing required value in project.env: NPM_FORWARD_PORT') }
+                    env.PROJECT_NAME       = values[0].trim()
+                    env.NAMESPACE          = values[1].trim()
+                    env.APP_HOST           = values[2].trim()
+                    env.REPLICAS           = values[3].trim()
+                    env.NEXUS_REGISTRY     = values[4].trim()
+                    env.NEXUS_REPO         = values[5].trim()
+                    env.INGRESS_CLASS      = values[6].trim()
+                    env.KUBE_INGRESS_IP    = values[7].trim()
+                    env.SONAR_PROJECT_KEY  = values[8].trim()
+                    env.SONAR_SERVER_NAME  = values[9].trim()
+                    env.TECHNITIUM_API_URL = values[10].trim()
+                    env.TECHNITIUM_ZONE    = values[11].trim()
+                    env.NPM_IP             = values[12].trim()
+                    env.NPM_API_URL        = values[13].trim()
+                    env.NPM_FORWARD_IP     = values[14].trim()
+                    env.NPM_FORWARD_PORT   = values[15].trim()
+
+                    if (!env.PROJECT_NAME)       { error('Missing required value in project.env: PROJECT_NAME') }
+                    if (!env.NAMESPACE)          { error('Missing required value in project.env: NAMESPACE') }
+                    if (!env.APP_HOST)           { error('Missing required value in project.env: APP_HOST') }
+                    if (!env.REPLICAS)           { error('Missing required value in project.env: REPLICAS') }
+                    if (!env.NEXUS_REGISTRY)     { error('Missing required value in project.env: NEXUS_REGISTRY') }
+                    if (!env.NEXUS_REPO)         { error('Missing required value in project.env: NEXUS_REPO') }
+                    if (!env.INGRESS_CLASS)      { error('Missing required value in project.env: INGRESS_CLASS') }
+                    if (!env.KUBE_INGRESS_IP)    { error('Missing required value in project.env: KUBE_INGRESS_IP') }
+                    if (!env.SONAR_PROJECT_KEY)  { error('Missing required value in project.env: SONAR_PROJECT_KEY') }
+                    if (!env.SONAR_SERVER_NAME)  { error('Missing required value in project.env: SONAR_SERVER_NAME') }
+                    if (!env.TECHNITIUM_API_URL) { error('Missing required value in project.env: TECHNITIUM_API_URL') }
+                    if (!env.TECHNITIUM_ZONE)    { error('Missing required value in project.env: TECHNITIUM_ZONE') }
+                    if (!env.NPM_IP)             { error('Missing required value in project.env: NPM_IP') }
+                    if (!env.NPM_API_URL)        { error('Missing required value in project.env: NPM_API_URL') }
+                    if (!env.NPM_FORWARD_IP)     { error('Missing required value in project.env: NPM_FORWARD_IP') }
+                    if (!env.NPM_FORWARD_PORT)   { error('Missing required value in project.env: NPM_FORWARD_PORT') }
 
                     if (!(env.REPLICAS ==~ /[1-9][0-9]*/)) {
                         error('REPLICAS must be a positive integer greater than zero')
                     }
+
+                    env.FULL_IMAGE = "${env.NEXUS_REGISTRY}/${env.NEXUS_REPO}:${env.BUILD_NUMBER}"
+                    env.LATEST_IMAGE = "${env.NEXUS_REGISTRY}/${env.NEXUS_REPO}:latest"
 
                     echo "Project:   ${env.PROJECT_NAME}"
                     echo "Namespace: ${env.NAMESPACE}"
