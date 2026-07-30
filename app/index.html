@@ -3,248 +3,229 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TheMaximus</title>
-<meta name="description" content="TheMaximus — home lab CI/CD pipeline: GitHub, Jenkins, SonarQube, Nexus, Kubernetes, Technitium, Nginx Proxy Manager.">
+<title>TheMaximus Build 12 | CI/CD Home Lab</title>
+<meta name="description" content="TheMaximus home lab CI/CD pipeline: GitHub, Jenkins, SonarQube, Nexus, Kubernetes, Technitium DNS, and Nginx Proxy Manager.">
 <style>
   :root{
-    --ink:#0b0b0d;
-    --charcoal:#17171a;
-    --steel:#8a8f98;
-    --paper:#ece7dd;
-    --copper:#c2793a;
-    --copper-dim:#7a4c26;
-    --rule: rgba(236,231,221,0.14);
+    --ink:#090805;
+    --panel:rgba(15,12,8,.82);
+    --paper:#f2e8d8;
+    --muted:#c1ad92;
+    --copper:#c77a38;
+    --copper-dark:#73411e;
+    --rule:rgba(242,232,216,.18);
   }
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
   body{
-    background:var(--ink);
+    margin:0;
     color:var(--paper);
-    font-family: ui-sans-serif, "Segoe UI", Arial, sans-serif;
+    background:var(--ink);
+    font-family:Inter,ui-sans-serif,"Segoe UI",Arial,sans-serif;
     -webkit-font-smoothing:antialiased;
   }
+  img{display:block;max-width:100%}
   .display{
-    font-family: "Arial Narrow", "Oswald", ui-sans-serif, sans-serif;
-    font-stretch: condensed;
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-    font-weight: 800;
+    font-family:"Arial Narrow","Oswald",Impact,sans-serif;
+    text-transform:uppercase;
+    letter-spacing:.025em;
+    font-weight:900;
   }
-  .mono{
-    font-family: ui-monospace, "SF Mono", Consolas, monospace;
-  }
+  .mono{font-family:ui-monospace,"SFMono-Regular",Consolas,monospace}
 
-  header{
-    padding: clamp(2rem, 6vw, 4.5rem) clamp(1.25rem, 5vw, 4rem) 2rem;
-    border-bottom: 1px solid var(--rule);
+  /* Maximus-3 is the desktop/tablet background. */
+  .hero{
+    min-height:clamp(560px,82vh,900px);
+    display:grid;
+    align-items:end;
+    position:relative;
+    isolation:isolate;
+    background-image:
+      linear-gradient(90deg,rgba(5,4,2,.88) 0%,rgba(5,4,2,.55) 46%,rgba(5,4,2,.18) 75%),
+      linear-gradient(0deg,rgba(9,8,5,.94) 0%,transparent 42%),
+      url("images/maximus-3.webp");
+    background-size:cover;
+    background-position:center;
+    border-bottom:1px solid var(--rule);
+  }
+  .hero::after{
+    content:"";
+    position:absolute;inset:0;z-index:-1;
+    background:radial-gradient(circle at 18% 30%,transparent 0 28%,rgba(0,0,0,.18) 70%);
+  }
+  .hero-content{
+    width:min(1180px,100%);
+    margin-inline:auto;
+    padding:clamp(2rem,7vw,6rem) clamp(1.25rem,5vw,4rem);
   }
   .eyebrow{
-    color: var(--copper);
-    font-size: 0.72rem;
-    letter-spacing: 0.28em;
-    text-transform: uppercase;
-    margin: 0 0 1rem;
+    margin:0 0 1rem;
+    color:var(--copper);
+    font-size:.74rem;
+    letter-spacing:.3em;
+    text-transform:uppercase;
   }
   h1{
-    margin: 0;
-    font-size: clamp(2.6rem, 8vw, 5.5rem);
-    line-height: 0.92;
+    margin:0;
+    max-width:10ch;
+    font-size:clamp(3rem,10vw,7.5rem);
+    line-height:.86;
+    text-shadow:0 4px 30px rgba(0,0,0,.55);
   }
   .tagline{
-    max-width: 46ch;
-    color: var(--steel);
-    margin: 1.25rem 0 0;
-    font-size: 1.05rem;
-    line-height: 1.55;
+    max-width:54ch;
+    margin:1.5rem 0 0;
+    color:#dfd2bd;
+    font-size:clamp(1rem,2vw,1.18rem);
+    line-height:1.65;
+    text-shadow:0 2px 15px rgba(0,0,0,.8);
+  }
+  .hero-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:.55rem;
+    margin-top:1.4rem;
+    padding:.58rem .8rem;
+    border:1px solid var(--rule);
+    background:rgba(5,4,2,.5);
+    backdrop-filter:blur(6px);
+    font-size:.78rem;
+  }
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--copper);box-shadow:0 0 10px var(--copper)}
+
+  .section{
+    width:min(1240px,100%);
+    margin-inline:auto;
+    padding:clamp(3rem,7vw,6rem) clamp(1.25rem,5vw,4rem);
+  }
+  .section-title{
+    margin:0 0 1.5rem;
+    color:var(--muted);
+    font-size:.78rem;
+    letter-spacing:.25em;
+    text-transform:uppercase;
   }
 
-  /* ---- featured (Aryan) ---- */
-  .featured-wrap{
-    display:flex;
-    justify-content:center;
-    padding: 0.5rem clamp(1.25rem, 5vw, 4rem) 2rem;
+  .gallery{
+    display:grid;
+    grid-template-columns:repeat(12,1fr);
+    gap:clamp(.75rem,1.4vw,1.25rem);
   }
-  .featured-frame{
+  .card{
     position:relative;
-    width: min(48vw, 200px);
-    aspect-ratio: 4 / 5;
-    border-radius: 16px;
+    min-height:320px;
     overflow:hidden;
-    background: var(--charcoal);
-    border: 2px solid var(--copper);
-    box-shadow: 0 0 0 1px rgba(194,121,58,0.25), 0 0 30px rgba(194,121,58,0.32);
-    transform: rotate(-1.5deg);
+    border:1px solid var(--rule);
+    background:#17120c;
   }
-  .featured-frame img{
-    width:100%; height:100%;
-    object-fit: cover;
-    display:block;
+  .card:nth-child(1){grid-column:span 7;aspect-ratio:16/10}
+  .card:nth-child(2){grid-column:span 5;aspect-ratio:4/5}
+  .card:nth-child(3){grid-column:span 5;aspect-ratio:4/5}
+  .card:nth-child(4){grid-column:span 7;aspect-ratio:16/10}
+  .card img{
+    width:100%;height:100%;object-fit:cover;
+    transition:transform .55s ease,filter .35s ease;
+    filter:saturate(.86) contrast(1.04);
   }
-  .featured-tag{
-    position:absolute; left:0; right:0; bottom:0;
-    display:flex; align-items:center; gap:0.4rem;
-    padding: 0.55rem 0.7rem;
-    background: linear-gradient(0deg, rgba(0,0,0,0.82), rgba(0,0,0,0));
+  .card:hover img{transform:scale(1.035);filter:saturate(1) contrast(1.05)}
+  .card figcaption{
+    position:absolute;left:0;right:0;bottom:0;
+    display:flex;justify-content:space-between;align-items:center;
+    padding:1rem;
+    background:linear-gradient(0deg,rgba(0,0,0,.8),transparent);
+    font-size:.76rem;letter-spacing:.1em;text-transform:uppercase;
   }
-  .featured-tag .dot-mini{
-    width:6px; height:6px; border-radius:50%;
-    background: var(--copper);
-    box-shadow: 0 0 6px var(--copper);
-  }
-  .featured-tag .name{
-    font-size: 0.72rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--paper);
-  }
+  .card .num{color:var(--copper)}
 
-  /* ---- film reel gallery ---- */
-  .reel-wrap{
-    padding: clamp(1.5rem, 4vw, 3rem) 0;
-    border-bottom: 1px solid var(--rule);
-    background:
-      repeating-linear-gradient(180deg, var(--charcoal) 0 6px, var(--ink) 6px 34px);
-  }
-  .reel{
-    display:flex;
-    gap: 0;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    padding: 0 clamp(1.25rem, 5vw, 4rem);
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  .reel::-webkit-scrollbar{ display:none; }
-  .frame{
-    position: relative;
-    flex: 0 0 auto;
-    width: min(72vw, 360px);
-    aspect-ratio: 4 / 5;
-    scroll-snap-align: start;
-    background: var(--charcoal);
-    border: 1px solid var(--rule);
-    border-left: none;
-    overflow: hidden;
-  }
-  .frame:first-child{ border-left: 1px solid var(--rule); }
-  .frame img{
-    width:100%; height:100%;
-    object-fit: cover;
-    display:block;
-    filter: grayscale(35%) contrast(1.05);
-    transition: filter .35s ease, transform .5s ease;
-  }
-  .frame:hover img{
-    filter: grayscale(0%) contrast(1.05);
-    transform: scale(1.03);
-  }
-  .frame-tag{
-    position:absolute; left:0; right:0; bottom:0;
-    display:flex; justify-content:space-between; align-items:baseline;
-    padding: 0.6rem 0.85rem;
-    background: linear-gradient(0deg, rgba(0,0,0,0.75), rgba(0,0,0,0));
-  }
-  .frame-tag .num{ color:var(--copper); font-size:0.75rem; }
-  .frame-tag .name{ font-size:0.78rem; color:var(--paper); letter-spacing:0.04em; }
+  .pipeline-wrap{border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);background:#0e0b08}
+  .chain{display:flex;flex-wrap:wrap;align-items:center;gap:.6rem 0}
+  .stage{padding:.62rem .9rem;border:1px solid var(--rule);white-space:nowrap;background:rgba(255,255,255,.02)}
+  .arrow{padding:0 .55rem;color:var(--copper-dark)}
 
-  /* ---- pipeline chain ---- */
-  section.pipeline{
-    padding: clamp(2.5rem, 6vw, 4rem) clamp(1.25rem, 5vw, 4rem);
-    border-bottom: 1px solid var(--rule);
-  }
-  .pipeline h2{
-    font-size: 0.78rem;
-    letter-spacing: 0.24em;
-    color: var(--steel);
-    margin: 0 0 1.5rem;
-  }
-  .chain{
-    display:flex; flex-wrap:wrap; align-items:center;
-    gap: 0.5rem 0;
-    font-size: clamp(0.85rem, 2.2vw, 1.05rem);
-  }
-  .stage{
-    padding: 0.5rem 0.9rem;
-    border: 1px solid var(--rule);
-    color: var(--paper);
-    white-space: nowrap;
-  }
-  .arrow{ color: var(--copper-dim); padding: 0 0.6rem; }
-
-  /* ---- status ---- */
   footer{
-    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;
-    padding: 1.75rem clamp(1.25rem, 5vw, 4rem) 2.5rem;
-    color: var(--steel);
-    font-size: 0.85rem;
+    width:min(1240px,100%);margin-inline:auto;
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;
+    padding:1.8rem clamp(1.25rem,5vw,4rem) 2.6rem;
+    color:var(--muted);font-size:.85rem;
   }
-  .status{
-    display:inline-flex; align-items:center; gap:0.5rem;
-  }
-  .dot{
-    width:8px; height:8px; border-radius:50%;
-    background: var(--copper);
-    box-shadow: 0 0 8px var(--copper);
-  }
-  a{ color: var(--paper); }
+  .status{display:inline-flex;align-items:center;gap:.55rem}
 
-  @media (prefers-reduced-motion: reduce){
-    .frame img{ transition:none; }
+  @media (max-width:760px){
+    /* Maximus-4 is a portrait background optimized for phones. */
+    .hero{
+      min-height:88svh;
+      background-image:
+        linear-gradient(0deg,rgba(5,4,2,.96) 0%,rgba(5,4,2,.50) 48%,rgba(5,4,2,.15) 78%),
+        url("images/maximus-4.webp");
+      background-position:center top;
+      align-items:end;
+    }
+    .hero-content{padding-bottom:2.4rem}
+    h1{font-size:clamp(3.1rem,18vw,5.3rem)}
+    .tagline{max-width:34ch}
+    .gallery{grid-template-columns:1fr}
+    .card,.card:nth-child(n){grid-column:1;aspect-ratio:4/5;min-height:0}
+    .card:nth-child(4){aspect-ratio:16/10}
+    .chain{font-size:.82rem}
   }
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.card img{transition:none}}
 </style>
 </head>
 <body>
-
-  <header>
-    <p class="eyebrow">Home Lab &middot; MaximusLab</p>
-    <h1 class="display">TheMaximus</h1>
-    <p class="tagline">A developer commit becomes a running pod: built by Jenkins, scanned by SonarQube, shipped through Nexus, and served here from Kubernetes.</p>
+  <header class="hero">
+    <div class="hero-content">
+      <p class="eyebrow">Home Lab &middot; MaximusLab</p>
+      <h1 class="display">The Maximus</h1>
+      <p class="tagline">A developer commit becomes a running Kubernetes workload: built by Jenkins, analyzed by SonarQube, stored in Nexus, and delivered through an automated end-to-end pipeline.</p>
+      <span class="hero-badge mono"><span class="dot"></span> webhook deployment test</span>
+    </div>
   </header>
 
-  <div class="featured-wrap">
-    <figure class="featured-frame">
-      <img src="images/Aryan.jpeg" alt="Featured: Aryan" loading="lazy">
-      <figcaption class="featured-tag"><span class="dot-mini"></span><span class="name">Aryan</span></figcaption>
-    </figure>
-  </div>
+  <main>
+    <section class="section" aria-labelledby="gallery-title">
+      <h2 id="gallery-title" class="section-title">Western Release Gallery</h2>
+      <div class="gallery">
+        <figure class="card">
+          <img src="images/maximus-1.webp" alt="Portrait in a western landscape" loading="lazy">
+          <figcaption><span class="num mono">01</span><span>Desert Frame</span></figcaption>
+        </figure>
+        <figure class="card">
+          <img src="images/maximus-2.webp" alt="Black SUV near a rustic ranch at sunset" loading="lazy">
+          <figcaption><span class="num mono">02</span><span>Ranch Drive</span></figcaption>
+        </figure>
+        <figure class="card">
+          <img src="images/maximus-5.webp" alt="Rustic portrait in denim" loading="lazy">
+          <figcaption><span class="num mono">03</span><span>Denim Portrait</span></figcaption>
+        </figure>
+        <figure class="card">
+          <img src="images/maximus-3.webp" alt="Western barn interior with horse and cowboy equipment" loading="lazy">
+          <figcaption><span class="num mono">04</span><span>Western Workshop</span></figcaption>
+        </figure>
+      </div>
+    </section>
 
-  <div class="reel-wrap">
-    <div class="reel">
-      <figure class="frame">
-        <img src="images/frame-01.jpeg" alt="Release frame 01" loading="lazy">
-        <figcaption class="frame-tag"><span class="num mono">01</span><span class="name">RELEASE FRAME</span></figcaption>
-      </figure>
-      <figure class="frame">
-        <img src="images/frame-02.jpeg" alt="Release frame 02" loading="lazy">
-        <figcaption class="frame-tag"><span class="num mono">02</span><span class="name">RELEASE FRAME</span></figcaption>
-      </figure>
-      <figure class="frame">
-        <img src="images/frame-04.jpeg" alt="Release frame 03" loading="lazy">
-        <figcaption class="frame-tag"><span class="num mono">03</span><span class="name">RELEASE FRAME</span></figcaption>
-      </figure>
+    <div class="pipeline-wrap">
+      <section class="section" aria-labelledby="pipeline-title">
+        <h2 id="pipeline-title" class="section-title">Delivery Chain</h2>
+        <div class="chain mono">
+          <span class="stage">GitHub</span><span class="arrow">&rarr;</span>
+          <span class="stage">Jenkins Agent</span><span class="arrow">&rarr;</span>
+          <span class="stage">SonarQube</span><span class="arrow">&rarr;</span>
+          <span class="stage">Quality Gate</span><span class="arrow">&rarr;</span>
+          <span class="stage">Docker Build</span><span class="arrow">&rarr;</span>
+          <span class="stage">Nexus</span><span class="arrow">&rarr;</span>
+          <span class="stage">Kubernetes</span><span class="arrow">&rarr;</span>
+          <span class="stage">Technitium DNS</span><span class="arrow">&rarr;</span>
+          <span class="stage">Nginx Proxy Manager</span><span class="arrow">&rarr;</span>
+          <span class="stage">E2E Test</span>
+        </div>
+      </section>
     </div>
-  </div>
-
-  <section class="pipeline">
-    <h2>DELIVERY CHAIN</h2>
-    <div class="chain mono">
-      <span class="stage">GitHub</span><span class="arrow">&rarr;</span>
-      <span class="stage">Jenkins Agent</span><span class="arrow">&rarr;</span>
-      <span class="stage">SonarQube</span><span class="arrow">&rarr;</span>
-      <span class="stage">Quality Gate</span><span class="arrow">&rarr;</span>
-      <span class="stage">Docker Build</span><span class="arrow">&rarr;</span>
-      <span class="stage">Nexus</span><span class="arrow">&rarr;</span>
-      <span class="stage">Kubernetes</span><span class="arrow">&rarr;</span>
-      <span class="stage">Technitium DNS</span><span class="arrow">&rarr;</span>
-      <span class="stage">Nginx Proxy Manager</span><span class="arrow">&rarr;</span>
-      <span class="stage">E2E Test</span>
-    </div>
-  </section>
+  </main>
 
   <footer>
     <span class="status mono"><span class="dot"></span> deployment healthy</span>
-    <span class="mono">themaximus.lab.local</span>
+    <span class="mono">themaximusog.lab.local</span>
   </footer>
-
 </body>
 </html>
