@@ -58,6 +58,46 @@
     line-height: 1.55;
   }
 
+  /* ---- featured (Aryan) ---- */
+  .featured-wrap{
+    display:flex;
+    justify-content:center;
+    padding: 0.5rem clamp(1.25rem, 5vw, 4rem) 2rem;
+  }
+  .featured-frame{
+    position:relative;
+    width: min(48vw, 200px);
+    aspect-ratio: 4 / 5;
+    border-radius: 16px;
+    overflow:hidden;
+    background: var(--charcoal);
+    border: 2px solid var(--copper);
+    box-shadow: 0 0 0 1px rgba(194,121,58,0.25), 0 0 30px rgba(194,121,58,0.32);
+    transform: rotate(-1.5deg);
+  }
+  .featured-frame img{
+    width:100%; height:100%;
+    object-fit: cover;
+    display:block;
+  }
+  .featured-tag{
+    position:absolute; left:0; right:0; bottom:0;
+    display:flex; align-items:center; gap:0.4rem;
+    padding: 0.55rem 0.7rem;
+    background: linear-gradient(0deg, rgba(0,0,0,0.82), rgba(0,0,0,0));
+  }
+  .featured-tag .dot-mini{
+    width:6px; height:6px; border-radius:50%;
+    background: var(--copper);
+    box-shadow: 0 0 6px var(--copper);
+  }
+  .featured-tag .name{
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--paper);
+  }
+
   /* ---- film reel gallery ---- */
   .reel-wrap{
     padding: clamp(1.5rem, 4vw, 3rem) 0;
@@ -161,6 +201,13 @@
     <p class="tagline">A developer commit becomes a running pod: built by Jenkins, scanned by SonarQube, shipped through Nexus, and served here from Kubernetes.</p>
   </header>
 
+  <div class="featured-wrap">
+    <figure class="featured-frame">
+      <img src="images/Aryan.jpeg" alt="Featured: Aryan" loading="lazy">
+      <figcaption class="featured-tag"><span class="dot-mini"></span><span class="name">Aryan</span></figcaption>
+    </figure>
+  </div>
+
   <div class="reel-wrap">
     <div class="reel">
       <figure class="frame">
@@ -168,16 +215,12 @@
         <figcaption class="frame-tag"><span class="num mono">01</span><span class="name">RELEASE FRAME</span></figcaption>
       </figure>
       <figure class="frame">
-        <img src="images/frame-03.jpeg" alt="Release frame 02" loading="lazy">
+        <img src="images/frame-02.jpeg" alt="Release frame 02" loading="lazy">
         <figcaption class="frame-tag"><span class="num mono">02</span><span class="name">RELEASE FRAME</span></figcaption>
       </figure>
       <figure class="frame">
-        <img src="images/frame-02.jpeg" alt="Release frame 03" loading="lazy">
+        <img src="images/frame-04.jpeg" alt="Release frame 03" loading="lazy">
         <figcaption class="frame-tag"><span class="num mono">03</span><span class="name">RELEASE FRAME</span></figcaption>
-      </figure>
-      <figure class="frame">
-        <img src="images/frame-04.jpeg" alt="Release frame 04" loading="lazy">
-        <figcaption class="frame-tag"><span class="num mono">04</span><span class="name">RELEASE FRAME</span></figcaption>
       </figure>
     </div>
   </div>
